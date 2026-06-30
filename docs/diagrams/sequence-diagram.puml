@@ -1,0 +1,59 @@
+@startuml Flowforge_Sequence_Diagram
+' Overview — manual workflow execution
+' Render: plantuml docs/diagrams/sequence-diagram.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #000000
+  LifeLineBorderColor #000000
+  ParticipantBorderColor #000000
+  ParticipantBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  ActorBackgroundColor #FFFFFF
+}
+
+actor User
+participant "Browser" as Browser
+participant "WorkflowsRouter\n(tRPC)" as TRPC
+database "PostgreSQL" as DB
+participant "Inngest\n(execute-workflow)" as Inngest
+participant "ExecutorRegistry" as Registry
+participant "ExecutionStatusStore" as StatusStore
+
+== Trigger execution ==
+User -> Browser : click Run
+Browser -> TRPC : workflows.execute({ workflowId })
+TRPC -> DB : assertTriggerEnabled(MANUAL)
+DB --> TRPC : enabled
+TRPC -> Inngest : send(workflows/execute.workflow)
+Inngest --> TRPC : event queued
+TRPC --> Browser : 200 OK
+
+== Async execution ==
+Inngest -> DB : create Execution (RUNNING)
+Inngest -> DB : load Workflow, Nodes, Connections
+DB --> Inngest : workflow graph
+Inngest -> Inngest : topologicalSort()
+Inngest -> StatusStore : set phase = running
+StatusStore -> DB : upsert snapshot
+
+loop each node in order
+  Inngest -> Registry : getExecutor(nodeType)
+  Registry --> Inngest : NodeExecutor
+  Inngest -> StatusStore : set node status = loading
+  Inngest -> Registry : execute(node, context)
+  Registry --> Inngest : updated context
+  Inngest -> StatusStore : set node status = success
+end
+
+Inngest -> StatusStore : set phase = completed
+Inngest -> DB : update Execution (SUCCESS)
+
+== Realtime feedback ==
+Browser -> Inngest : subscribe (useRealtime)
+Inngest --> Browser : node.started / node.completed
+Inngest --> Browser : execution.completed
+
+@enduml

@@ -1,0 +1,84 @@
+@startuml Flowforge_Activity_Diagram
+' Process modelling — workflow execution overview
+' Render: plantuml docs/diagrams/activity-diagram.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam arrowColor #000000
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #000000
+}
+skinparam partition {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+
+|User|
+start
+:Open workflow editor;
+:Click **Run**;
+
+|Browser|
+:Call workflows.execute\nvia tRPC;
+
+|tRPC API|
+:Validate user session;
+if (Manual trigger enabled?) then (yes)
+else (no)
+  :Return 403 Forbidden;
+  stop
+endif
+:Send event to Inngest\nworkflows/execute.workflow;
+:Return 200 OK to browser;
+
+fork
+  |Browser|
+  :Subscribe to Inngest Realtime\n(useRealtime);
+  :Listen for node / execution events;
+fork again
+  |Inngest|
+  partition "execute-workflow" {
+    :Create Execution record\nstatus = RUNNING;
+    :Load Workflow, Nodes,\nConnections from DB;
+    if (All trigger nodes enabled?) then (yes)
+    else (no)
+      :Mark execution FAILED;
+      stop
+    endif
+    :Topological sort nodes;
+    :Publish execution.started;
+    :Set snapshot phase = running;
+
+    while (More nodes in order?) is (yes)
+      :Resolve NodeExecutor\nfrom registry;
+      :Publish node status = loading;
+      :Execute node\n(AI / HTTP / Discord / Slack);
+      if (Node execution OK?) then (yes)
+        :Update shared context;
+        :Publish node status = success;
+        :Upsert snapshot in DB;
+      else (no)
+        :Publish execution.failed;
+        :Mark execution FAILED;
+        stop
+      endif
+    endwhile (no)
+
+    :Publish execution.completed;
+    :Set snapshot phase = completed;
+    :Update Execution\nstatus = SUCCESS;
+  }
+end fork
+
+|Browser|
+:Sync node status on canvas;
+stop
+
+@enduml

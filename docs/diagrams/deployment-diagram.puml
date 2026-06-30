@@ -1,0 +1,76 @@
+@startuml Flowforge_Deployment_Diagram
+' Deployment diagram — overview (clean layout)
+' Render: plantuml docs/diagrams/deployment-diagram.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam arrowColor #000000
+skinparam nodesep 90
+skinparam ranksep 90
+skinparam padding 16
+skinparam node {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam artifact {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+
+' ── Layout grid ─────────────────────────────────────────────
+'   [ Client ]     [ Inngest Cloud ]
+'        \              /
+'      [ Application Server ] ---- [ PostgreSQL ]
+'                |
+'        [ External Services ]
+
+node "Client Device" as Client {
+  artifact "Web Browser\nReact 19 + React Flow" as Browser
+}
+
+cloud "Inngest Cloud\nQueue + Realtime" as Inngest
+
+node "Application Server\nNext.js 16 (frontend/)" as Server {
+  artifact "Next.js App\ntRPC · Auth · Webhooks\nInngest Handler" as NextApp
+}
+
+database "PostgreSQL\nManaged Database" as DB
+
+cloud "External Services\nPolar.sh · OpenAI · Anthropic\nGemini · Stripe · Google Forms\nDiscord · Slack" as External
+
+Client -[hidden]right- Server
+Server -[hidden]right- DB
+Inngest -[hidden]down- Server
+External -[hidden]up- Server
+Client -[hidden]right- Inngest
+Inngest -[hidden]right- DB
+
+' ── Connections ─────────────────────────────────────────────
+
+Browser -right-> NextApp : HTTPS
+
+Browser -up-> Inngest : WebSocket\n(useRealtime)
+
+NextApp -right-> DB : Prisma ORM
+
+NextApp -up-> Inngest : send events
+Inngest -down-> NextApp : invoke handler
+
+NextApp -down-> External : API calls
+External -up-> NextApp : webhooks
+
+@enduml

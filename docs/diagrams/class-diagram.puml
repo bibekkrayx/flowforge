@@ -1,0 +1,157 @@
+@startuml Flowforge_Class_Diagram
+' Classic UML class diagram — overview with key detail
+' Render: plantuml docs/diagrams/class-diagram.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  ArrowColor #000000
+}
+
+left to right direction
+
+' ── Domain ──────────────────────────────────────────────────
+
+class User {
+  +id: String
+  +email: String
+  +name: String
+  -role: UserRole
+  -banned: Boolean
+  --
+  +signIn()
+  +signUp()
+}
+
+class Workflow {
+  +id: String
+  +name: String
+  -userId: String
+  --
+  +save()
+  +run()
+}
+
+class Node {
+  +id: String
+  +name: String
+  +type: NodeType
+  -position: Json
+  -data: Json
+  -credentialId: String
+}
+
+class Credential {
+  +id: String
+  +name: String
+  -value: String
+  +type: CredentialType
+  -userId: String
+}
+
+' ── API ─────────────────────────────────────────────────────
+
+class WorkflowsRouter {
+  +workflows: Router
+  -session: Session
+  --
+  +create()
+  +update()
+  +remove()
+  +getOne()
+  +execute()
+}
+
+class CredentialsRouter {
+  +credentials: Router
+  -session: Session
+  --
+  +create()
+  +update()
+  +remove()
+  +getMany()
+}
+
+' ── Execution ───────────────────────────────────────────────
+
+class ExecuteWorkflowFunction {
+  +workflowId: String
+  -context: WorkflowContext
+  -inngestEventId: String
+  --
+  +run()
+  +onFailure()
+  +topologicalSort()
+}
+
+interface NodeExecutor {
+  +execute(params): WorkflowContext
+}
+
+class ExecutorRegistry {
+  -executorRegistry: Map
+  --
+  +getExecutor(type)
+}
+
+class ExecutionStatusStore {
+  -phase: String
+  -nodeStatuses: Json
+  --
+  +setCachedNodeStatus()
+  +getCachedExecution()
+}
+
+class TriggerEnforcement {
+  -settings: Map
+  --
+  +assertTriggerEnabled()
+  +assertWorkflowTriggersEnabled()
+}
+
+class Encryption {
+  -cryptr: Cryptr
+  --
+  +encrypt()
+  +decrypt()
+}
+
+' ── Associations ──────────────────────────────────────────────
+
+User "1" -- "1..*" Workflow
+Workflow "1" -- "1..*" Node
+User "1" -- "1..*" Credential
+
+User "1..*" -- "1" WorkflowsRouter
+User "1..*" -- "1" CredentialsRouter
+
+WorkflowsRouter "1" -- "1..*" Workflow
+WorkflowsRouter "1" -- "1..*" ExecuteWorkflowFunction
+
+CredentialsRouter "1" -- "1..*" Credential
+CredentialsRouter "1" -- "1" Encryption
+
+ExecuteWorkflowFunction "1" -- "1..*" Node
+ExecuteWorkflowFunction "1" -- "1..*" ExecutorRegistry
+ExecuteWorkflowFunction "1" -- "1" ExecutionStatusStore
+ExecuteWorkflowFunction "1" -- "1" TriggerEnforcement
+
+ExecutorRegistry "1" -- "1..*" NodeExecutor
+Node "0..1" -- "0..*" Credential : uses
+
+' ── Layout hints ──────────────────────────────────────────────
+
+ExecutorRegistry -[hidden]right- ExecutionStatusStore
+ExecutionStatusStore -[hidden]right- TriggerEnforcement
+ExecutorRegistry -[hidden]up- ExecuteWorkflowFunction
+TriggerEnforcement -[hidden]up- ExecuteWorkflowFunction
+
+Credential -[hidden]down- Encryption
+CredentialsRouter -[hidden]down- Encryption
+
+@enduml

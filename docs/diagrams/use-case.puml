@@ -1,0 +1,64 @@
+@startuml Flowforge_Use_Case_Diagram
+' Classic UML layout: actors outside system boundary, use cases inside.
+' Render: plantuml docs/diagrams/use-case.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #FFF9C4
+  BorderColor #333333
+  FontColor #1A1A1A
+}
+skinparam rectangle {
+  BorderColor #333333
+  FontColor #1A1A1A
+}
+skinparam actor {
+  BorderColor #333333
+  FontColor #1A1A1A
+}
+
+left to right direction
+
+actor Visitor
+actor Member
+actor Admin
+actor "Google Forms" as Google
+actor Stripe
+
+rectangle "Flowforge" {
+  usecase "Sign up" as UC_SignUp
+  usecase "Sign in" as UC_SignIn
+  usecase "Browse workflows" as UC_Browse
+  usecase "Create workflow" as UC_Create
+  usecase "Manage workflow" as UC_Manage
+  usecase "Manage credentials" as UC_Credentials
+  usecase "View executions" as UC_Executions
+  usecase "Manage subscription" as UC_Subscription
+  usecase "Trigger workflow" as UC_Trigger
+  usecase "Manage users" as UC_Users
+  usecase "Set user role" as UC_Role
+  usecase "Manage trigger settings" as UC_Triggers
+}
+
+Visitor --> UC_SignUp
+Visitor --> UC_SignIn
+
+Member --> UC_Browse
+Member --> UC_Create
+Member --> UC_Manage
+Member --> UC_Credentials
+Member --> UC_Executions
+Member --> UC_Subscription
+Member --> UC_Trigger
+
+Admin --> UC_Manage
+Admin --> UC_Users
+Admin --> UC_Role
+Admin --> UC_Triggers
+
+Google --> UC_Trigger
+Stripe --> UC_Trigger
+
+@enduml
