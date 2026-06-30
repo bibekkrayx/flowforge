@@ -19,6 +19,8 @@ import {
 } from "@/features/workflows/hooks/use-workflows";
 import { WorkflowIcon } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
+import { CreateWorkflowDialog } from "@/features/ai-workflow/components/create-workflow-dialog";
 
 export const WorkflowContainer = ({
   children,
@@ -27,17 +29,25 @@ export const WorkflowContainer = ({
 }) => {
   const [params, setParams] = useWorkflowParams();
   const createWorkflow = useCreateWorkflow();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   return (
     <EntityContainer
       header={
-        <EntityHeader
-          title="Workflows"
-          description="Manage your automation workflows"
-          onNew={() => createWorkflow.mutate()}
-          newButtonLabel="New workflow"
-          isCreating={createWorkflow.isPending}
-        />
+        <>
+          <EntityHeader
+            title="Workflows"
+            description="Manage your automation workflows"
+            onNew={() => setIsCreateDialogOpen(true)}
+            newButtonLabel="New workflow"
+            isCreating={createWorkflow.isPending}
+          />
+          <CreateWorkflowDialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+            onCreateManual={() => createWorkflow.mutate()}
+          />
+        </>
       }
       search={
         <EntitySearch
