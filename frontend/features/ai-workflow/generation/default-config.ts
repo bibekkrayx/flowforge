@@ -6,6 +6,11 @@ import { NodeType } from "@/generated/prisma/enums";
  * rule enforced by the node config dialogs: `^[A-Za-z_$][A-Za-z0-9_$]*$`.
  */
 const VARIABLE_NAME_SLUG: Partial<Record<NodeType, string>> = {
+  [NodeType.MANUAL_TRIGGER]: "manual",
+  [NodeType.GOOGLE_FORM_TRIGGER]: "form",
+  [NodeType.STRIPE_TRIGGER]: "stripe",
+  [NodeType.SCHEDULE_TRIGGER]: "schedule",
+  [NodeType.EVENT_TRIGGER]: "event",
   [NodeType.OPENAI]: "openai",
   [NodeType.ANTHROPIC]: "anthropic",
   [NodeType.GEMINI]: "gemini",
@@ -86,9 +91,17 @@ export function defaultDataForNode(
       };
     case NodeType.LOOP:
       return { variableName };
+    case NodeType.GOOGLE_FORM_TRIGGER:
+      return {
+        formId: "",
+        ...(variableName ? { variableName } : {}),
+      };
+    case NodeType.MANUAL_TRIGGER:
+    case NodeType.STRIPE_TRIGGER:
+    case NodeType.SCHEDULE_TRIGGER:
+    case NodeType.EVENT_TRIGGER:
+      return variableName ? { variableName } : {};
     default:
-      // Triggers and any unknown types carry no default data; they are
-      // configured later through their own procedures/dialogs.
       return {};
   }
 }

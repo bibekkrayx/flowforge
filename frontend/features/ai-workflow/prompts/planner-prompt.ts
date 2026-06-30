@@ -7,10 +7,16 @@ import type { buildCapabilities } from "@/features/ai-workflow/capabilities/regi
 export type CapabilitySnapshot = ReturnType<typeof buildCapabilities>;
 
 type NodeLike = {
-  nodeType: string;
+  type?: string;
+  /** Legacy alias used in some test fixtures. */
+  nodeType?: string;
   label?: string;
   description?: string;
 };
+
+function nodeTypeId(node: NodeLike): string {
+  return node.type ?? node.nodeType ?? "unknown";
+}
 
 type CredentialLike = {
   type?: string;
@@ -25,10 +31,11 @@ type ConnectionRuleLike = {
 };
 
 function formatNode(node: NodeLike): string {
-  const name = node.label ?? node.nodeType;
+  const id = nodeTypeId(node);
+  const name = node.label ?? id;
   const description = node.description ? ` — ${node.description}` : "";
 
-  return `- nodeType: "${node.nodeType}" (${name})${description}`;
+  return `- nodeType: "${id}" (${name})${description}`;
 }
 
 function formatTriggers(snapshot: CapabilitySnapshot): string {

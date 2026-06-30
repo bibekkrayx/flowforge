@@ -61,7 +61,7 @@ export function validatePlan(
   const droppedReason = `The plan referenced unsupported node type(s): ${droppedList}. They were removed because they are not part of FlowForge's available capabilities.`;
   validated.reason = plan.reason ? `${plan.reason} ${droppedReason}` : droppedReason;
 
-  if (validated.suggestions.length === 0) {
+  if ((validated.suggestions ?? []).length === 0) {
     validated.suggestions = [
       "Use an HTTP Request node to integrate with the unsupported service via its API.",
       "Build a new custom node for the unsupported capability, then re-run the planner.",

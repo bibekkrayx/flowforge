@@ -16,7 +16,7 @@ import { CheckCircle2, CircleAlert } from "lucide-react";
 interface WorkflowNodeLike {
   id: string;
   type?: string | null;
-  data?: unknown;
+  data?: Record<string, unknown>;
 }
 
 interface SetupChecklistProps {

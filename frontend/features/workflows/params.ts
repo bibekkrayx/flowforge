@@ -11,4 +11,6 @@ export const workflowParams = {
     .withOptions({ clearOnDefault: true }),
 
   search: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
+
+  regenerateFrom: parseAsString.withDefault("").withOptions({ clearOnDefault: true }),
 };

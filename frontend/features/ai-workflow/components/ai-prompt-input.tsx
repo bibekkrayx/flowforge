@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,17 +8,34 @@ import { useAiPlanner } from "@/features/ai-workflow/hooks/use-ai-planner";
 import { WorkflowPreview } from "@/features/ai-workflow/components/workflow-preview";
 import { SparklesIcon } from "lucide-react";
 
+export type AiPromptPhase = "prompt" | "preview";
+
 type AiPromptInputProps = {
   onCancel: () => void;
+  onPhaseChange?: (phase: AiPromptPhase) => void;
 };
 
-export const AiPromptInput = ({ onCancel }: AiPromptInputProps) => {
+export const AiPromptInput = ({
+  onCancel,
+  onPhaseChange,
+}: AiPromptInputProps) => {
   const [prompt, setPrompt] = useState("");
   const planner = useAiPlanner();
   const plan = planner.data;
+  const phase: AiPromptPhase = plan ? "preview" : "prompt";
+
+  useEffect(() => {
+    onPhaseChange?.(phase);
+  }, [onPhaseChange, phase]);
+
+  const handleBack = () => {
+    planner.reset();
+  };
 
   if (plan) {
-    return <WorkflowPreview plan={plan} onCancel={onCancel} />;
+    return (
+      <WorkflowPreview plan={plan} onCancel={onCancel} onBack={handleBack} />
+    );
   }
 
   const trimmedPrompt = prompt.trim();

@@ -30,6 +30,9 @@ export const WorkflowContainer = ({
   const [params, setParams] = useWorkflowParams();
   const createWorkflow = useCreateWorkflow();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const regenerateFrom = params.regenerateFrom;
+  const isCreateDialogVisible =
+    isCreateDialogOpen || Boolean(regenerateFrom);
 
   return (
     <EntityContainer
@@ -43,9 +46,15 @@ export const WorkflowContainer = ({
             isCreating={createWorkflow.isPending}
           />
           <CreateWorkflowDialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
+            open={isCreateDialogVisible}
+            onOpenChange={(open) => {
+              setIsCreateDialogOpen(open);
+              if (!open && regenerateFrom) {
+                void setParams({ regenerateFrom: null });
+              }
+            }}
             onCreateManual={() => createWorkflow.mutate()}
+            startInAiMode={Boolean(regenerateFrom)}
           />
         </>
       }

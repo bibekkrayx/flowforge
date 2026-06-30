@@ -87,15 +87,18 @@ describe("defaultDataForNode", () => {
     expect(data.method).toBe("GET");
   });
 
-  it("returns minimal data for triggers and unknown types", () => {
-    expect(defaultDataForNode(NodeType.MANUAL_TRIGGER, { index: 0 })).toEqual(
-      {},
-    );
+  it("returns trigger defaults with output variables and empty required fields", () => {
+    expect(defaultDataForNode(NodeType.MANUAL_TRIGGER, { index: 0 })).toEqual({
+      variableName: "manual_1",
+    });
     expect(
       defaultDataForNode(NodeType.GOOGLE_FORM_TRIGGER, { index: 0 }),
-    ).toEqual({});
-    expect(defaultDataForNode(NodeType.SCHEDULE_TRIGGER, { index: 0 })).toEqual(
-      {},
+    ).toEqual({
+      formId: "",
+      variableName: "form_1",
+    });
+    expect(defaultDataForNode(NodeType.SCHEDULE_TRIGGER, { index: 2 })).toEqual(
+      { variableName: "schedule_3" },
     );
   });
 });

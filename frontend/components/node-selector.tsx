@@ -30,7 +30,7 @@ export type NodeTypeOption = {
   icon: React.ComponentType<{ className?: string }> | string;
 };
 
-const triggerNodes: NodeTypeOption[] = [
+export const triggerNodes: NodeTypeOption[] = [
   {
     type: NodeType.MANUAL_TRIGGER,
     label: "Trigger Manually",
@@ -95,7 +95,7 @@ const triggerNodes: NodeTypeOption[] = [
   },
 ];
 
-const executionNodes: NodeTypeOption[] = [
+export const executionNodes: NodeTypeOption[] = [
   {
     type: NodeType.HTTP_REQUEST,
     label: "HTTP Request",

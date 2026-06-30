@@ -29,9 +29,8 @@ export const SetupOverlay = ({ workflowId }: SetupOverlayProps) => {
   const { data: workflow } = useSuspenseWorkflow(workflowId);
   const nodes = workflow.nodes;
 
-  const { items, status } = deriveRequirements(nodes);
+  const { status } = deriveRequirements(nodes);
   const isComplete = status === "complete";
-  const unsatisfied = items.filter((item) => !item.satisfied).length;
 
   return (
     <div className="pointer-events-none absolute right-4 top-4 z-10 flex items-center gap-2">
@@ -44,9 +43,7 @@ export const SetupOverlay = ({ workflowId }: SetupOverlayProps) => {
               {isComplete ? (
                 <Badge variant="secondary">Ready</Badge>
               ) : (
-                <Badge variant="destructive">
-                  {unsatisfied > 0 ? unsatisfied : "Incomplete"}
-                </Badge>
+                <Badge variant="destructive">Configuration Incomplete</Badge>
               )}
             </Button>
           </PopoverTrigger>

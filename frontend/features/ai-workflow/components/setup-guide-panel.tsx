@@ -12,7 +12,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getSetupGuideForNode } from "@/features/ai-workflow/setup-guide/guides";
+import { getSetupGuideForNode, WEBHOOK_URL_PLACEHOLDER } from "@/features/ai-workflow/setup-guide/guides";
 import {
   buildWebhookUrl,
   type WebhookProvider,
@@ -156,6 +156,18 @@ export const SetupGuidePanel = ({
                       const isCopied = copiedStep === stepKey;
                       const provider = webhookProviderForNodeType(nodeType);
                       const canCopy = step.copyable && provider !== null;
+                      const webhookUrl =
+                        provider !== null
+                          ? buildWebhookUrl(provider, workflowId)
+                          : null;
+                      const displayDetail =
+                        webhookUrl !== null &&
+                        step.detail.includes(WEBHOOK_URL_PLACEHOLDER)
+                          ? step.detail.replaceAll(
+                              WEBHOOK_URL_PLACEHOLDER,
+                              webhookUrl,
+                            )
+                          : step.detail;
 
                       return (
                         <li key={stepKey} className="flex gap-3">
@@ -165,7 +177,7 @@ export const SetupGuidePanel = ({
                           <div className="flex min-w-0 flex-col gap-1">
                             <p className="text-sm font-medium">{step.title}</p>
                             <p className="text-sm text-muted-foreground">
-                              {step.detail}
+                              {displayDetail}
                             </p>
                             {canCopy && (
                               <Button

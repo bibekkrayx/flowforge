@@ -3,7 +3,7 @@ import { CredentialType, NodeType } from "@/generated/prisma/enums";
 /** Minimal shape of a node we inspect when deriving configuration requirements. */
 export type RequirementNode = {
   id: string;
-  type: NodeType | string;
+  type?: NodeType | string | null;
   data?: Record<string, unknown>;
 };
 
@@ -110,6 +110,42 @@ const CONFIG_FIELD_META: Record<string, { dataKeys: string[]; label: string }> =
   },
   recipient: { dataKeys: ["recipient", "to"], label: "Set Recipient" },
   cron: { dataKeys: ["cron", "cronExpression"], label: "Set Schedule" },
+  "Google Form ID": {
+    dataKeys: ["formId", "googleFormId"],
+    label: "Enter Google Form ID",
+  },
+  "Stripe Webhook Endpoint": {
+    dataKeys: ["webhookUrl", "endpoint"],
+    label: "Set Stripe Webhook Endpoint",
+  },
+  "Cron schedule": {
+    dataKeys: ["cron", "cronExpression"],
+    label: "Set Schedule",
+  },
+  "Calendar event": {
+    dataKeys: ["eventId", "calendarEventId"],
+    label: "Set Calendar Event",
+  },
+  "Endpoint URL": {
+    dataKeys: ["endpoint", "url"],
+    label: "Set Endpoint URL",
+  },
+  "Discord Webhook URL": {
+    dataKeys: ["webhookUrl"],
+    label: "Enter Discord Webhook",
+  },
+  "Slack Webhook URL": {
+    dataKeys: ["webhookUrl"],
+    label: "Enter Slack Webhook",
+  },
+  "Spreadsheet ID": {
+    dataKeys: ["spreadsheetId", "sheetId"],
+    label: "Set Spreadsheet ID",
+  },
+  Recipient: {
+    dataKeys: ["recipient", "to"],
+    label: "Set Recipient",
+  },
 };
 
 type NodeCatalogModule = {
@@ -163,6 +199,8 @@ export function deriveRequirements(
   const items: RequirementItem[] = [];
 
   for (const node of nodes) {
+    if (!node.type) continue;
+
     const capability = resolveCapability(node.type);
     if (!capability) continue;
 

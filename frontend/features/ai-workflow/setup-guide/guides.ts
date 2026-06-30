@@ -203,7 +203,9 @@ const NODE_TYPE_TO_GUIDE_KEY: Partial<Record<NodeType, string>> = {
 };
 
 /** Returns the setup guide for a node type, or undefined when none applies. */
-export function getSetupGuideForNode(type: NodeType): SetupGuide | undefined {
-  const key = NODE_TYPE_TO_GUIDE_KEY[type];
+export function getSetupGuideForNode(
+  type: NodeType | string,
+): SetupGuide | undefined {
+  const key = NODE_TYPE_TO_GUIDE_KEY[type as NodeType];
   return key ? SETUP_GUIDES[key] : undefined;
 }

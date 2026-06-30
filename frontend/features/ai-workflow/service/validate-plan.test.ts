@@ -62,7 +62,7 @@ describe("validatePlan", () => {
     ]);
     expect(result.unsupportedFeatures).toContain("gmail-trigger");
     expect(result.reason).toContain("gmail-trigger");
-    expect(result.suggestions.length).toBeGreaterThan(0);
+    expect((result.suggestions ?? []).length).toBeGreaterThan(0);
   });
 
   it("respects an explicit supported list argument", () => {

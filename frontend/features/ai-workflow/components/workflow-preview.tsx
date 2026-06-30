@@ -12,6 +12,7 @@ import {
 import type { WorkflowPlan } from "@/features/ai-workflow/schemas/plan";
 import {
   ArrowDownIcon,
+  ArrowLeftIcon,
   BotIcon,
   CheckCircle2Icon,
   KeyIcon,
@@ -19,6 +20,7 @@ import {
   MessageSquareIcon,
   SettingsIcon,
   SparklesIcon,
+  TriangleAlertIcon,
   XCircleIcon,
   ZapIcon,
 } from "lucide-react";
@@ -34,9 +36,14 @@ const CATEGORY_ICON: Record<StepCategory, typeof ZapIcon> = {
 type WorkflowPreviewProps = {
   plan: WorkflowPlan;
   onCancel: () => void;
+  onBack: () => void;
 };
 
-export const WorkflowPreview = ({ plan, onCancel }: WorkflowPreviewProps) => {
+export const WorkflowPreview = ({
+  plan,
+  onCancel,
+  onBack,
+}: WorkflowPreviewProps) => {
   const generateWorkflow = useGenerateWorkflow();
   const steps = categorizeSteps(plan.steps);
   const requirements = [
@@ -63,6 +70,22 @@ export const WorkflowPreview = ({ plan, onCancel }: WorkflowPreviewProps) => {
       </div>
 
       <StatusRow plan={plan} />
+
+      {plan.warnings.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+          <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400">
+            <TriangleAlertIcon className="size-4" />
+            Warnings
+          </div>
+          <ul className="flex list-disc flex-col gap-1 pl-5 text-muted-foreground">
+            {plan.warnings.map((warning, index) => (
+              <li key={`${warning}-${index}`} className="text-xs">
+                {warning}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="flex flex-col gap-1">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -97,6 +120,27 @@ export const WorkflowPreview = ({ plan, onCancel }: WorkflowPreviewProps) => {
         </div>
       </div>
 
+      {plan.explanation.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            How it works
+          </p>
+          <ol className="flex flex-col gap-2">
+            {plan.explanation.map((item) => (
+              <li
+                key={`${item.step}-${item.title}`}
+                className="rounded-lg border border-border bg-muted/30 p-3"
+              >
+                <p className="text-sm font-medium">
+                  {item.step}. {item.title}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">{item.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       {requirements.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -120,29 +164,56 @@ export const WorkflowPreview = ({ plan, onCancel }: WorkflowPreviewProps) => {
         </div>
       )}
 
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3">
-        <ListChecksIcon className="size-4 text-muted-foreground" />
-        <p className="text-sm">
-          Estimated Manual Steps:{" "}
-          <span className="font-medium">{manualStepCount}</span>
-        </p>
-      </div>
+      {plan.manualSteps.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <ListChecksIcon className="size-4 text-muted-foreground" />
+            <p className="text-sm font-medium">
+              Manual setup ({manualStepCount})
+            </p>
+          </div>
+          <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
+            {plan.manualSteps.map((step, index) => (
+              <li key={`${step}-${index}`}>{step}</li>
+            ))}
+          </ul>
+        </div>
+      ) : manualStepCount > 0 ? (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3">
+          <ListChecksIcon className="size-4 text-muted-foreground" />
+          <p className="text-sm">
+            Estimated manual steps:{" "}
+            <span className="font-medium">{manualStepCount}</span>
+          </p>
+        </div>
+      ) : null}
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
         <Button
-          variant="outline"
-          onClick={onCancel}
+          variant="ghost"
+          onClick={onBack}
           disabled={generateWorkflow.isPending}
+          className="justify-start sm:justify-center"
         >
-          Cancel
+          <ArrowLeftIcon className="size-4" />
+          Back
         </Button>
-        <Button
-          onClick={() => generateWorkflow.mutate({ plan })}
-          disabled={!plan.possible || generateWorkflow.isPending}
-        >
-          {generateWorkflow.isPending && <Spinner />}
-          Generate Workflow
-        </Button>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            disabled={generateWorkflow.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => generateWorkflow.mutate({ plan })}
+            disabled={!plan.possible || generateWorkflow.isPending}
+          >
+            {generateWorkflow.isPending && <Spinner />}
+            Generate Workflow
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -175,6 +246,11 @@ const StatusRow = ({ plan }: { plan: WorkflowPlan }) => {
             </li>
           ))}
         </ul>
+      )}
+      {plan.unsupportedFeatures.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Unsupported: {plan.unsupportedFeatures.join(", ")}
+        </p>
       )}
     </div>
   );

@@ -34,8 +34,7 @@ export const RegenerateButton = ({ workflowId }: RegenerateButtonProps) => {
   const handleConfirm = () => {
     // Hand the source workflow id to the AI create flow, which creates a fresh
     // draft. The current workflow is left untouched.
-    const params = new URLSearchParams({ regenerateFrom: workflowId });
-    router.push(`/workflows/new?${params.toString()}`);
+    router.push(`/workflows?regenerateFrom=${workflowId}`);
   };
 
   return (
