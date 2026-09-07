@@ -5,7 +5,9 @@ import type { NodeExecutor } from "@/features/execution/types";
 import { publishNodeStatus } from "@/features/execution/lib/publish-execution-event";
 import {
   generateDiscordAiOutput,
+  generateGeneralAiOutput,
   OPENAI_STRUCTURED_OUTPUT_MODEL,
+  shouldUseTeacherFeedbackMode,
 } from "@/lib/ai/generate-discord-ai-output";
 import {
   createAiNodeOutput,
@@ -67,6 +69,10 @@ export const openAiExecutor: NodeExecutor<OpenAiData> = async ({
     "{{json googleForm}}",
   );
   const userPrompt = Handlebars.compile(userPromptTemplate)(context);
+  const teacherFeedbackMode = shouldUseTeacherFeedbackMode(
+    context,
+    userPromptTemplate,
+  );
 
   const credential = await step.run(makeStepId("get-credential", nodeId, iterationKey), () => {
     return prisma.credential.findUnique({
@@ -87,9 +93,15 @@ export const openAiExecutor: NodeExecutor<OpenAiData> = async ({
   });
 
   try {
+    const generate =
+      teacherFeedbackMode ? generateDiscordAiOutput : generateGeneralAiOutput;
+    const stepBase = teacherFeedbackMode
+      ? "openai-generate-structured"
+      : "openai-generate-text";
+
     const result = await step.ai.wrap(
-      makeStepId("openai-generate-structured", nodeId, iterationKey),
-      generateDiscordAiOutput,
+      makeStepId(stepBase, nodeId, iterationKey),
+      generate,
       {
         structuredModel: openai(OPENAI_STRUCTURED_OUTPUT_MODEL),
         fallbackModel: openai("gpt-4"),

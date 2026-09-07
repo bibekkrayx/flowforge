@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nodeComponents } from "@/config/node-components";
+import { REGISTERED_NODE_TYPES } from "@/config/node-type-metadata";
 import { CredentialType, NodeType } from "@/generated/prisma/enums";
 import {
   NODE_CATALOG,
@@ -7,9 +7,7 @@ import {
   getNodeCapability,
 } from "@/features/ai-workflow/capabilities/node-catalog";
 
-const REGISTRY_TYPES = (Object.keys(nodeComponents) as NodeType[]).filter(
-  (type) => type !== NodeType.INITIAL,
-);
+const REGISTRY_TYPES = [...REGISTERED_NODE_TYPES];
 
 describe("NODE_CATALOG", () => {
   it("has an entry for every supported registry node type", () => {
@@ -110,7 +108,7 @@ describe("NODE_CATALOG", () => {
     expect(getNodeCapability(NodeType.GEMINI)?.requiredConfig).toEqual([]);
   });
 
-  it("populates label and description from node-selector metadata", () => {
+  it("populates label and description from node type metadata", () => {
     for (const entry of NODE_CATALOG) {
       expect(entry.label.length).toBeGreaterThan(0);
       expect(entry.description.length).toBeGreaterThan(0);

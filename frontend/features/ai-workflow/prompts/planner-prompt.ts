@@ -136,6 +136,7 @@ export function buildPlannerSystemPrompt(capabilities: CapabilitySnapshot): stri
     '1. Each step\'s "nodeType" MUST be copied EXACTLY from the trigger or action lists above. Never invent, rename, or guess a nodeType.',
     "2. If the user asks for something that no listed node supports (for example a Gmail trigger, a Slack action, or any unlisted service), DO NOT fabricate a node for it.",
     '   Instead set "possible" to false, write a clear "reason" explaining what is unsupported, and provide "suggestions" — typically using an HTTP Request node to call the service\'s API, or building a new custom node.',
+    '   When "possible" is true, set "reason" to "" and "suggestions" to [].',
     '3. If the request can be fully satisfied with supported nodes, set "possible" to true and list the steps in execution order.',
     '4. Always include a human-readable "explanation" array describing, step by step, what the workflow does and why.',
     "5. Leave all external configuration for the user: do NOT invent webhook URLs, form IDs, channel IDs, API keys, or credential values. Reference that the user must supply them.",

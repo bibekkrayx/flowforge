@@ -1,5 +1,5 @@
 @startuml Flowforge_Sequence_Diagram
-' Overview — manual workflow execution
+' Manual workflow execution — key steps only
 ' Render: plantuml docs/diagrams/sequence-diagram.puml
 ' Or paste @startuml block into https://www.plantuml.com/plantuml
 
@@ -16,44 +16,44 @@ skinparam sequence {
 
 actor User
 participant "Browser" as Browser
-participant "WorkflowsRouter\n(tRPC)" as TRPC
+participant "workflows\n(tRPC)" as TRPC
 database "PostgreSQL" as DB
-participant "Inngest\n(execute-workflow)" as Inngest
+participant "Inngest\nexecute-workflow" as Inngest
 participant "ExecutorRegistry" as Registry
-participant "ExecutionStatusStore" as StatusStore
 
-== Trigger execution ==
-User -> Browser : click Run
+== 1. Trigger ==
+User -> Browser : click **Run**
 Browser -> TRPC : workflows.execute({ workflowId })
 TRPC -> DB : assertTriggerEnabled(MANUAL)
 DB --> TRPC : enabled
-TRPC -> Inngest : send(workflows/execute.workflow)
+TRPC -> Inngest : send(execute.workflow)
 Inngest --> TRPC : event queued
 TRPC --> Browser : 200 OK
 
-== Async execution ==
-Inngest -> DB : create Execution (RUNNING)
-Inngest -> DB : load Workflow, Nodes, Connections
-DB --> Inngest : workflow graph
-Inngest -> Inngest : topologicalSort()
-Inngest -> StatusStore : set phase = running
-StatusStore -> DB : upsert snapshot
+Browser -> Inngest : subscribe (useRealtime)
 
-loop each node in order
+== 2. Prepare ==
+Inngest -> DB : create Execution (RUNNING)
+Inngest -> DB : load workflow, nodes, connections
+DB --> Inngest : graph
+Inngest -> DB : assertWorkflowTriggersEnabled()
+Inngest -> Inngest : topologicalSort()
+Inngest -> DB : reset WorkflowExecutionSnapshot
+Inngest --> Browser : execution.started
+
+== 3. Run graph ==
+loop each node via executeGraph
   Inngest -> Registry : getExecutor(nodeType)
   Registry --> Inngest : NodeExecutor
-  Inngest -> StatusStore : set node status = loading
+  Inngest --> Browser : node.started
   Inngest -> Registry : execute(node, context)
   Registry --> Inngest : updated context
-  Inngest -> StatusStore : set node status = success
+  Inngest -> DB : upsert node snapshot
+  Inngest --> Browser : node.completed
 end
 
-Inngest -> StatusStore : set phase = completed
-Inngest -> DB : update Execution (SUCCESS)
-
-== Realtime feedback ==
-Browser -> Inngest : subscribe (useRealtime)
-Inngest --> Browser : node.started / node.completed
+== 4. Finish ==
 Inngest --> Browser : execution.completed
+Inngest -> DB : update Execution (SUCCESS, output)
 
 @enduml

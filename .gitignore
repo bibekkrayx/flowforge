@@ -1,3 +1,6 @@
+# Tailwind CSS packages are symlinked here so Next can resolve them from the git root.
+/node_modules
+
 # docs (frontend build/generated docs only; the repo-root docs/ is tracked)
 /frontend/docs
 

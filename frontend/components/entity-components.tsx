@@ -7,6 +7,7 @@ import {
   SearchIcon,
   TrashIcon,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ type EntityHeaderProps = {
   newButtonLabel?: string;
   disabled?: boolean;
   isCreating?: boolean;
+  actions?: ReactNode;
 } & (
   | { onNew: () => void; newButtonHref?: never }
   | { newButtonHref: string; onNew?: never }
@@ -47,6 +49,7 @@ export const EntityHeader = ({
   newButtonLabel,
   disabled,
   isCreating,
+  actions,
 }: EntityHeaderProps) => {
   return (
     <div className="flex flex-row items-center justify-between gap-x-4 w-full">
@@ -58,18 +61,27 @@ export const EntityHeader = ({
           </p>
         )}
       </div>
-      {onNew && !newButtonHref && (
-        <Button disabled={isCreating || disabled} onClick={onNew} size={`sm`}>
-          <PlusIcon className="size-4" /> {newButtonLabel}
-        </Button>
-      )}
-      {newButtonHref && !onNew && (
-        <Button size={`sm`} asChild>
-          <Link href={newButtonHref} prefetch>
-            <PlusIcon className="size-4" />
-            {newButtonLabel}
-          </Link>
-        </Button>
+      {(actions || onNew || newButtonHref) && (
+        <div className="flex items-center gap-2">
+          {actions}
+          {onNew && !newButtonHref && (
+            <Button
+              disabled={isCreating || disabled}
+              onClick={onNew}
+              size="sm"
+            >
+              <PlusIcon className="size-4" /> {newButtonLabel}
+            </Button>
+          )}
+          {newButtonHref && !onNew && (
+            <Button size="sm" asChild>
+              <Link href={newButtonHref} prefetch>
+                <PlusIcon className="size-4" />
+                {newButtonLabel}
+              </Link>
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

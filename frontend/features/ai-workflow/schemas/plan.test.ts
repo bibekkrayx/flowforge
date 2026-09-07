@@ -26,6 +26,8 @@ const validPlan: WorkflowPlan = {
   warnings: [],
   manualSteps: [],
   explanation: [{ step: 1, title: "Start", body: "Workflow begins." }],
+  reason: "",
+  suggestions: [],
 };
 
 describe("WorkflowPlanSchema", () => {

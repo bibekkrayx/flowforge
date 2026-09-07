@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "node scripts/link-parent-css-packages.mjs",
     "dev": "next dev",
     "db:studio": "prisma studio",
     "db:migrate": "prisma migrate dev",

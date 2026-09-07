@@ -1,10 +1,8 @@
-import { nodeComponents } from "@/config/node-components";
 import { CredentialType, NodeType } from "@/generated/prisma/enums";
 import {
-  executionNodes,
-  triggerNodes,
-  type NodeTypeOption,
-} from "@/components/node-selector";
+  getNodeTypeMetadata,
+  REGISTERED_NODE_TYPES,
+} from "@/config/node-type-metadata";
 import type { NodeCapability, NodeKind } from "@/features/ai-workflow/types";
 
 /**
@@ -41,23 +39,12 @@ const REQUIRED_CONFIG_BY_TYPE: Partial<Record<NodeType, string[]>> = {
   [NodeType.EMAIL]: ["Recipient"],
 };
 
-/** Display metadata (label/description) merged from the node-selector. */
-const METADATA_BY_TYPE: ReadonlyMap<NodeType, NodeTypeOption> = new Map(
-  [...triggerNodes, ...executionNodes].map((option) => [option.type, option]),
-);
-
 function kindFor(type: NodeType): NodeKind {
   return TRIGGER_TYPES.has(type) ? "trigger" : "action";
 }
 
 function buildCatalogEntry(type: NodeType): NodeCapability {
-  const metadata = METADATA_BY_TYPE.get(type);
-  if (!metadata) {
-    throw new Error(
-      `No node-selector metadata found for node type "${type}". ` +
-        `Add it to triggerNodes/executionNodes in components/node-selector.tsx.`,
-    );
-  }
+  const metadata = getNodeTypeMetadata(type);
 
   return {
     type,
@@ -70,16 +57,12 @@ function buildCatalogEntry(type: NodeType): NodeCapability {
 }
 
 /**
- * The capability catalog, derived dynamically from the existing node registry.
- * INITIAL is excluded because it is an internal placeholder, not user-selectable.
- * Iterating the registry keys means a newly registered node type automatically
- * appears here (and fails loudly if its display metadata is missing).
+ * The capability catalog, derived from the registered node types and display
+ * metadata. INITIAL is excluded because it is an internal placeholder.
  */
-export const NODE_CATALOG: readonly NodeCapability[] = (
-  Object.keys(nodeComponents) as NodeType[]
-)
-  .filter((type) => type !== NodeType.INITIAL)
-  .map(buildCatalogEntry);
+export const NODE_CATALOG: readonly NodeCapability[] = REGISTERED_NODE_TYPES.map(
+  buildCatalogEntry,
+);
 
 export const SUPPORTED_NODE_TYPES: readonly NodeType[] = NODE_CATALOG.map(
   (entry) => entry.type,

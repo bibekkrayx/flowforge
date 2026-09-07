@@ -32,8 +32,8 @@ export const WorkflowPlanSchema = z.object({
   warnings: z.array(z.string()),
   manualSteps: z.array(z.string()),
   explanation: z.array(ExplanationStepSchema),
-  reason: z.string().optional(),
-  suggestions: z.array(z.string()).optional(),
+  reason: z.string(),
+  suggestions: z.array(z.string()),
 });
 
 /** Input accepted by the AI planner (server router + UI). */

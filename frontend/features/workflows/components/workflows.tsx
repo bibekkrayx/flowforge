@@ -11,16 +11,25 @@ import {
   LoadingView,
   ErrorView,
 } from "@/components/entity-components";
+import { Button } from "@/components/ui/button";
 import { useWorkflowParams } from "@/features/workflows/hooks/use-workflow-params";
 import {
   useCreateWorkflow,
   useRemoveWorkflow,
   useSuspenseWorkflows,
 } from "@/features/workflows/hooks/use-workflows";
-import { WorkflowIcon } from "lucide-react";
+import { WorkflowIcon, ZapIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CreateWorkflowDialog } from "@/features/ai-workflow/components/create-workflow-dialog";
+
+const openEditorWithNodeSelector = (
+  router: ReturnType<typeof useRouter>,
+  workflowId: string,
+) => {
+  router.push(`/workflows/${workflowId}?openNodeSelector=1`);
+};
 
 export const WorkflowContainer = ({
   children,
@@ -29,10 +38,19 @@ export const WorkflowContainer = ({
 }) => {
   const [params, setParams] = useWorkflowParams();
   const createWorkflow = useCreateWorkflow();
+  const router = useRouter();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const regenerateFrom = params.regenerateFrom;
   const isCreateDialogVisible =
     isCreateDialogOpen || Boolean(regenerateFrom);
+
+  const handleCreateWithNodeSelector = () => {
+    createWorkflow.mutate(undefined, {
+      onSuccess: (workflow) => {
+        openEditorWithNodeSelector(router, workflow.id);
+      },
+    });
+  };
 
   return (
     <EntityContainer
@@ -44,6 +62,17 @@ export const WorkflowContainer = ({
             onNew={() => setIsCreateDialogOpen(true)}
             newButtonLabel="New workflow"
             isCreating={createWorkflow.isPending}
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={createWorkflow.isPending}
+                onClick={handleCreateWithNodeSelector}
+              >
+                <ZapIcon className="size-4" />
+                What triggers this workflow?
+              </Button>
+            }
           />
           <CreateWorkflowDialog
             open={isCreateDialogVisible}
@@ -53,7 +82,13 @@ export const WorkflowContainer = ({
                 void setParams({ regenerateFrom: null });
               }
             }}
-            onCreateManual={() => createWorkflow.mutate()}
+            onCreateManual={() =>
+              createWorkflow.mutate(undefined, {
+                onSuccess: (workflow) => {
+                  openEditorWithNodeSelector(router, workflow.id);
+                },
+              })
+            }
             startInAiMode={Boolean(regenerateFrom)}
           />
         </>

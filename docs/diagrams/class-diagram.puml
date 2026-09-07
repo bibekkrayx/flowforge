@@ -1,10 +1,11 @@
 @startuml Flowforge_Class_Diagram
-' Classic UML class diagram — overview with key detail
+' Classic UML class diagram — simplified overview
 ' Render: plantuml docs/diagrams/class-diagram.puml
 ' Or paste @startuml block into https://www.plantuml.com/plantuml
 
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
+skinparam linetype ortho
 skinparam classAttributeIconSize 0
 skinparam class {
   BackgroundColor #FFFFFF
@@ -12,146 +13,177 @@ skinparam class {
   FontColor #000000
   ArrowColor #000000
 }
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
 
-left to right direction
+top to bottom direction
 
 ' ── Domain ──────────────────────────────────────────────────
 
-class User {
-  +id: String
-  +email: String
-  +name: String
-  -role: UserRole
-  -banned: Boolean
-  --
-  +signIn()
-  +signUp()
-}
+package "Domain" as DomainPkg {
 
-class Workflow {
-  +id: String
-  +name: String
-  -userId: String
-  --
-  +save()
-  +run()
-}
+  class User {
+    +id, email, name
+    -role, banned
+  }
 
-class Node {
-  +id: String
-  +name: String
-  +type: NodeType
-  -position: Json
-  -data: Json
-  -credentialId: String
-}
+  class Workflow {
+    +id, name
+    -userId
+  }
 
-class Credential {
-  +id: String
-  +name: String
-  -value: String
-  +type: CredentialType
-  -userId: String
+  class Node {
+    +id, name, type
+    -position, data
+  }
+
+  class Connection {
+    -fromNodeId, toNodeId
+  }
+
+  class Credential {
+    +id, name, type
+    -value, userId
+  }
+
+  class Execution {
+    -status, output
+    -inngestEventId
+  }
+
+  class CalendarEvent {
+    +title, startAt
+  }
+
+  class ScheduleTrigger {
+    -cronExpression
+    -nextRunAt
+  }
+
+  class EventReminder {
+    -fireAt, enabled
+  }
+
+  class TriggerSetting {
+    -kind, enabled
+  }
 }
 
 ' ── API ─────────────────────────────────────────────────────
 
-class WorkflowsRouter {
-  +workflows: Router
-  -session: Session
-  --
-  +create()
-  +update()
-  +remove()
-  +getOne()
-  +execute()
+package "API" as ApiPkg {
+  class AppRouter {
+    workflows
+    credentials
+    executions
+    calendar
+    admin
+    aiWorkflow
+    --
+    protected / premium / admin
+  }
 }
 
-class CredentialsRouter {
-  +credentials: Router
-  -session: Session
-  --
-  +create()
-  +update()
-  +remove()
-  +getMany()
+' ── Services ────────────────────────────────────────────────
+
+package "Services" as ServicesPkg {
+
+  class AiWorkflowService {
+    +plan()
+    +generate()
+  }
+
+  class ExecuteWorkflowFunction {
+    +run()
+    +onFailure()
+  }
+
+  class SchedulerScanFunction {
+    +runScan()
+  }
+
+  interface NodeExecutor {
+    +execute()
+  }
+
+  class ExecutorRegistry {
+    +getExecutor(type)
+  }
+
+  class TriggerEnforcement {
+    +assertTriggersEnabled()
+  }
+
+  class Encryption {
+    +encrypt()
+    +decrypt()
+  }
 }
 
-' ── Execution ───────────────────────────────────────────────
+' ── Domain layout (straight rows) ───────────────────────────
 
-class ExecuteWorkflowFunction {
-  +workflowId: String
-  -context: WorkflowContext
-  -inngestEventId: String
-  --
-  +run()
-  +onFailure()
-  +topologicalSort()
-}
+User -[hidden]right- Credential
+Credential -[hidden]right- CalendarEvent
+Workflow -[hidden]right- Connection
+Connection -[hidden]right- Execution
+Node -[hidden]right- ScheduleTrigger
+ScheduleTrigger -[hidden]right- EventReminder
+EventReminder -[hidden]right- TriggerSetting
 
-interface NodeExecutor {
-  +execute(params): WorkflowContext
-}
+User -[hidden]down- Workflow
+Workflow -[hidden]down- Node
 
-class ExecutorRegistry {
-  -executorRegistry: Map
-  --
-  +getExecutor(type)
-}
+' ── Services layout (straight rows) ───────────────────────────
 
-class ExecutionStatusStore {
-  -phase: String
-  -nodeStatuses: Json
-  --
-  +setCachedNodeStatus()
-  +getCachedExecution()
-}
+AiWorkflowService -[hidden]right- ExecuteWorkflowFunction
+ExecuteWorkflowFunction -[hidden]right- SchedulerScanFunction
+ExecutorRegistry -[hidden]right- TriggerEnforcement
+TriggerEnforcement -[hidden]right- Encryption
+ExecutorRegistry -[hidden]down- NodeExecutor
 
-class TriggerEnforcement {
-  -settings: Map
-  --
-  +assertTriggerEnabled()
-  +assertWorkflowTriggersEnabled()
-}
+' ── Package layout ────────────────────────────────────────────
 
-class Encryption {
-  -cryptr: Cryptr
-  --
-  +encrypt()
-  +decrypt()
-}
+DomainPkg -[hidden]down- ApiPkg
+ApiPkg -[hidden]down- ServicesPkg
 
 ' ── Associations ──────────────────────────────────────────────
 
-User "1" -- "1..*" Workflow
+User "1" -- "0..*" Workflow
+User "1" -- "0..*" Credential
+User "1" -- "0..*" CalendarEvent
+
 Workflow "1" -- "1..*" Node
-User "1" -- "1..*" Credential
+Workflow "1" -- "0..*" Connection
+Workflow "1" -- "0..*" Execution
+Workflow "1" -- "0..*" ScheduleTrigger
+Workflow "1" -- "0..*" EventReminder
 
-User "1..*" -- "1" WorkflowsRouter
-User "1..*" -- "1" CredentialsRouter
-
-WorkflowsRouter "1" -- "1..*" Workflow
-WorkflowsRouter "1" -- "1..*" ExecuteWorkflowFunction
-
-CredentialsRouter "1" -- "1..*" Credential
-CredentialsRouter "1" -- "1" Encryption
-
-ExecuteWorkflowFunction "1" -- "1..*" Node
-ExecuteWorkflowFunction "1" -- "1..*" ExecutorRegistry
-ExecuteWorkflowFunction "1" -- "1" ExecutionStatusStore
-ExecuteWorkflowFunction "1" -- "1" TriggerEnforcement
-
-ExecutorRegistry "1" -- "1..*" NodeExecutor
 Node "0..1" -- "0..*" Credential : uses
+CalendarEvent "1" -- "0..*" EventReminder
 
-' ── Layout hints ──────────────────────────────────────────────
+AppRouter --> Workflow
+AppRouter --> Credential
+AppRouter --> Execution
+AppRouter --> CalendarEvent
+AppRouter --> TriggerSetting
+AppRouter --> AiWorkflowService
+AppRouter --> Encryption
 
-ExecutorRegistry -[hidden]right- ExecutionStatusStore
-ExecutionStatusStore -[hidden]right- TriggerEnforcement
-ExecutorRegistry -[hidden]up- ExecuteWorkflowFunction
-TriggerEnforcement -[hidden]up- ExecuteWorkflowFunction
+AiWorkflowService --> Workflow
 
-Credential -[hidden]down- Encryption
-CredentialsRouter -[hidden]down- Encryption
+ExecuteWorkflowFunction --> Node
+ExecuteWorkflowFunction --> ExecutorRegistry
+ExecuteWorkflowFunction --> TriggerEnforcement
+ExecuteWorkflowFunction --> Execution
+
+SchedulerScanFunction --> ScheduleTrigger
+SchedulerScanFunction --> EventReminder
+SchedulerScanFunction --> ExecuteWorkflowFunction : triggers
+
+ExecutorRegistry --> NodeExecutor
+TriggerEnforcement --> TriggerSetting
 
 @enduml

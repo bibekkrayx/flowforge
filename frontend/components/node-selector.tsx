@@ -1,6 +1,11 @@
 import { createId } from "@paralleldrive/cuid2";
 import { NodeType } from "@/generated/prisma/enums";
 import {
+  executionNodeMetadata,
+  triggerNodeMetadata,
+  type NodeTypeMetadata,
+} from "@/config/node-type-metadata";
+import {
   CalendarClockIcon,
   ClockIcon,
   GlobeIcon,
@@ -23,109 +28,59 @@ import { Separator } from "./ui/separator";
 import { useReactFlow } from "@xyflow/react";
 import { toast } from "sonner";
 
-export type NodeTypeOption = {
-  type: NodeType;
-  label: string;
-  description: string;
+export type NodeTypeOption = NodeTypeMetadata & {
   icon: React.ComponentType<{ className?: string }> | string;
 };
 
-export const triggerNodes: NodeTypeOption[] = [
-  {
-    type: NodeType.MANUAL_TRIGGER,
-    label: "Trigger Manually",
-    description:
-      "Runs the flow on clicking a button. Good for getting started quickly",
-    icon: MousePointerIcon,
-  },
-  {
-    type: NodeType.GOOGLE_FORM_TRIGGER,
-    label: "Google Form",
-    description:
-      "Runs the flow when google form is submitted",
-    icon: `/logos/googleform.svg`,
-  },
-  {
-    type: NodeType.STRIPE_TRIGGER,
-    label: "Stripe Event",
-    description: "Runs the flow when a Stripe Event is captured",
-    icon: "/logos/stripe.svg",
-  },
-  {
-    type: NodeType.SCHEDULE_TRIGGER,
-    label: "Schedule",
-    description: "Runs the flow on a recurring schedule",
-    icon: ClockIcon,
-  },
-  {
-    type: NodeType.EVENT_TRIGGER,
-    label: "Event Reminder",
-    description: "Runs the flow relative to a calendar event",
-    icon: CalendarClockIcon,
-  },
-  {
-    type: NodeType.GEMINI,
-    label: "Gemini",
-    description: "Uses Google Gemini to generate text",
-    icon: "/logos/gemini.svg",
-  },
-  {
-    type: NodeType.OPENAI,
-    label: "OpenAI",
-    description: "Uses OpenAI to generate text",
-    icon: "/logos/openai.svg",
-  },
-  {
-    type: NodeType.ANTHROPIC,
-    label: "Anthropic",
-    description: "Uses Anthropic to generate text",
-    icon: "/logos/anthropic.svg",
-  },
-  {
-    type: NodeType.DISCORD,
-    label: "Discord",
-    description: "Send a message to Discord",
-    icon: "/logos/discord.svg",
-  },
-  {
-    type: NodeType.SLACK,
-    label: "Slack",
-    description: "Send a message to Slack",
-    icon: "/logos/slack.svg",
-  },
-];
+const TRIGGER_ICONS: Partial<
+  Record<NodeType, React.ComponentType<{ className?: string }> | string>
+> = {
+  [NodeType.MANUAL_TRIGGER]: MousePointerIcon,
+  [NodeType.GOOGLE_FORM_TRIGGER]: `/logos/googleform.svg`,
+  [NodeType.STRIPE_TRIGGER]: "/logos/stripe.svg",
+  [NodeType.SCHEDULE_TRIGGER]: ClockIcon,
+  [NodeType.EVENT_TRIGGER]: CalendarClockIcon,
+  [NodeType.GEMINI]: "/logos/gemini.svg",
+  [NodeType.OPENAI]: "/logos/openai.svg",
+  [NodeType.ANTHROPIC]: "/logos/anthropic.svg",
+  [NodeType.DISCORD]: "/logos/discord.svg",
+  [NodeType.SLACK]: "/logos/slack.svg",
+};
 
-export const executionNodes: NodeTypeOption[] = [
-  {
-    type: NodeType.HTTP_REQUEST,
-    label: "HTTP Request",
-    description: "Makes an HTTP request",
-    icon: GlobeIcon,
-  },
-  {
-    type: NodeType.LOOP,
-    label: "Loop / For Each",
-    description: "Run downstream nodes once per item in an array",
-    icon: RepeatIcon,
-  },
-  {
-    type: NodeType.EMAIL,
-    label: "Email",
-    description: "Send an email via Resend",
-    icon: MailIcon,
-  },
-  {
-    type: NodeType.GOOGLE_SHEETS,
-    label: "Google Sheets",
-    description: "Read rows from a spreadsheet",
-    icon: SheetIcon,
-  },
-];
+const EXECUTION_ICONS: Partial<
+  Record<NodeType, React.ComponentType<{ className?: string }> | string>
+> = {
+  [NodeType.HTTP_REQUEST]: GlobeIcon,
+  [NodeType.LOOP]: RepeatIcon,
+  [NodeType.EMAIL]: MailIcon,
+  [NodeType.GOOGLE_SHEETS]: SheetIcon,
+};
+
+function withIcon(
+  metadata: NodeTypeMetadata,
+  icons: Partial<
+    Record<NodeType, React.ComponentType<{ className?: string }> | string>
+  >,
+): NodeTypeOption {
+  const icon = icons[metadata.type];
+  if (!icon) {
+    throw new Error(`Missing icon for node type "${metadata.type}"`);
+  }
+  return { ...metadata, icon };
+}
+
+export const triggerNodes: NodeTypeOption[] = triggerNodeMetadata.map((node) =>
+  withIcon(node, TRIGGER_ICONS),
+);
+
+export const executionNodes: NodeTypeOption[] = executionNodeMetadata.map(
+  (node) => withIcon(node, EXECUTION_ICONS),
+);
 
 interface NodeSelectorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 export function NodeSelector({
@@ -210,7 +165,7 @@ export function NodeSelector({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>{children}</SheetTrigger>
+      {children ? <SheetTrigger asChild>{children}</SheetTrigger> : null}
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle>What triggers this workflow?</SheetTitle>
