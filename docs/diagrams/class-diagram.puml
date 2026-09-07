@@ -1,0 +1,189 @@
+@startuml Flowforge_Class_Diagram
+' Classic UML class diagram — simplified overview
+' Render: plantuml docs/diagrams/class-diagram.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  ArrowColor #000000
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+
+top to bottom direction
+
+' ── Domain ──────────────────────────────────────────────────
+
+package "Domain" as DomainPkg {
+
+  class User {
+    +id, email, name
+    -role, banned
+  }
+
+  class Workflow {
+    +id, name
+    -userId
+  }
+
+  class Node {
+    +id, name, type
+    -position, data
+  }
+
+  class Connection {
+    -fromNodeId, toNodeId
+  }
+
+  class Credential {
+    +id, name, type
+    -value, userId
+  }
+
+  class Execution {
+    -status, output
+    -inngestEventId
+  }
+
+  class CalendarEvent {
+    +title, startAt
+  }
+
+  class ScheduleTrigger {
+    -cronExpression
+    -nextRunAt
+  }
+
+  class EventReminder {
+    -fireAt, enabled
+  }
+
+  class TriggerSetting {
+    -kind, enabled
+  }
+}
+
+' ── API ─────────────────────────────────────────────────────
+
+package "API" as ApiPkg {
+  class AppRouter {
+    workflows
+    credentials
+    executions
+    calendar
+    admin
+    aiWorkflow
+    --
+    protected / premium / admin
+  }
+}
+
+' ── Services ────────────────────────────────────────────────
+
+package "Services" as ServicesPkg {
+
+  class AiWorkflowService {
+    +plan()
+    +generate()
+  }
+
+  class ExecuteWorkflowFunction {
+    +run()
+    +onFailure()
+  }
+
+  class SchedulerScanFunction {
+    +runScan()
+  }
+
+  interface NodeExecutor {
+    +execute()
+  }
+
+  class ExecutorRegistry {
+    +getExecutor(type)
+  }
+
+  class TriggerEnforcement {
+    +assertTriggersEnabled()
+  }
+
+  class Encryption {
+    +encrypt()
+    +decrypt()
+  }
+}
+
+' ── Domain layout (straight rows) ───────────────────────────
+
+User -[hidden]right- Credential
+Credential -[hidden]right- CalendarEvent
+Workflow -[hidden]right- Connection
+Connection -[hidden]right- Execution
+Node -[hidden]right- ScheduleTrigger
+ScheduleTrigger -[hidden]right- EventReminder
+EventReminder -[hidden]right- TriggerSetting
+
+User -[hidden]down- Workflow
+Workflow -[hidden]down- Node
+
+' ── Services layout (straight rows) ───────────────────────────
+
+AiWorkflowService -[hidden]right- ExecuteWorkflowFunction
+ExecuteWorkflowFunction -[hidden]right- SchedulerScanFunction
+ExecutorRegistry -[hidden]right- TriggerEnforcement
+TriggerEnforcement -[hidden]right- Encryption
+ExecutorRegistry -[hidden]down- NodeExecutor
+
+' ── Package layout ────────────────────────────────────────────
+
+DomainPkg -[hidden]down- ApiPkg
+ApiPkg -[hidden]down- ServicesPkg
+
+' ── Associations ──────────────────────────────────────────────
+
+User "1" -- "0..*" Workflow
+User "1" -- "0..*" Credential
+User "1" -- "0..*" CalendarEvent
+
+Workflow "1" -- "1..*" Node
+Workflow "1" -- "0..*" Connection
+Workflow "1" -- "0..*" Execution
+Workflow "1" -- "0..*" ScheduleTrigger
+Workflow "1" -- "0..*" EventReminder
+
+Node "0..1" -- "0..*" Credential : uses
+CalendarEvent "1" -- "0..*" EventReminder
+
+AppRouter --> Workflow
+AppRouter --> Credential
+AppRouter --> Execution
+AppRouter --> CalendarEvent
+AppRouter --> TriggerSetting
+AppRouter --> AiWorkflowService
+AppRouter --> Encryption
+
+AiWorkflowService --> Workflow
+
+ExecuteWorkflowFunction --> Node
+ExecuteWorkflowFunction --> ExecutorRegistry
+ExecuteWorkflowFunction --> TriggerEnforcement
+ExecuteWorkflowFunction --> Execution
+
+SchedulerScanFunction --> ScheduleTrigger
+SchedulerScanFunction --> EventReminder
+SchedulerScanFunction --> ExecuteWorkflowFunction : triggers
+
+ExecutorRegistry --> NodeExecutor
+TriggerEnforcement --> TriggerSetting
+
+@enduml

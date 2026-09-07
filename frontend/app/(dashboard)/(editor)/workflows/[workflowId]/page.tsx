@@ -4,6 +4,7 @@ import {
   EditorLoading,
 } from "@/features/editor/components/editor";
 import { EditorHeader } from "@/features/editor/components/editor-header";
+import { SetupOverlay } from "@/features/ai-workflow/components/setup-overlay";
 import { prefetchWorkflow } from "@/features/workflows/server/prefetch";
 import { requireAuth } from "@/lib/auth-utils";
 import { HydrateClient } from "@/trpc/server";
@@ -28,8 +29,9 @@ const Page = async ({ params }: PageProp) => {
         <Suspense fallback={<EditorLoading />}>
           <div className="flex h-svh min-h-0 flex-col">
             <EditorHeader workflowId={workflowId} />
-            <main className="min-h-0 flex-1">
+            <main className="relative min-h-0 flex-1">
               <Editor workflowId={workflowId} />
+              <SetupOverlay workflowId={workflowId} />
             </main>
           </div>
         </Suspense>

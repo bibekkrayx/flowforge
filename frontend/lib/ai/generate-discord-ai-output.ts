@@ -40,6 +40,47 @@ export type GenerateDiscordAiOutputResult = {
   usedFallback: boolean;
 };
 
+/** Teacher-feedback JSON is only for Google Form → OpenAI → Discord flows. */
+export function shouldUseTeacherFeedbackMode(
+  context: Record<string, unknown>,
+  userPromptTemplate: string,
+): boolean {
+  if (context.googleForm != null) {
+    return true;
+  }
+
+  if (/\{\{FORM_SUBMISSION_DATA\}\}/i.test(userPromptTemplate)) {
+    return true;
+  }
+
+  if (/\{\{\s*json\s+googleForm\s*\}\}/i.test(userPromptTemplate)) {
+    return true;
+  }
+
+  return false;
+}
+
+export async function generateGeneralAiOutput(
+  params: GenerateDiscordAiOutputParams,
+): Promise<GenerateDiscordAiOutputResult> {
+  const { text } = await generateText({
+    model: params.structuredModel,
+    system: params.systemPrompt.trim(),
+    prompt: params.userPrompt,
+  });
+
+  const validated = validateAndExtractDiscordMessage(text);
+  if (!validated.ok) {
+    throw new Error(validated.message);
+  }
+
+  return {
+    message: validated.message,
+    modelUsed: OPENAI_STRUCTURED_OUTPUT_MODEL,
+    usedFallback: false,
+  };
+}
+
 function tryParseTeacherFeedbackFromText(text: string): TeacherFeedback | null {
   const normalized = normalizeRawAiOutput(text);
   if (!normalized.startsWith("{")) {

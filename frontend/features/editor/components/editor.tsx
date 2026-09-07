@@ -21,9 +21,9 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { nodeComponents } from "@/config/node-components";
-import { AddNodeButton } from "./add-node-button";
-import { useSetAtom } from "jotai";
-import { editorAtom } from "../store/atoms";
+import { OpenNodeSelectorButton } from "./open-node-selector-button";
+import { useSetAtom, useAtom } from "jotai";
+import { editorAtom, nodeSelectorOpenAtom } from "../store/atoms";
 import { NodeType } from "@/generated/prisma/enums";
 import { ExecuteWorkflowButton } from "./execute-workflow-button";
 import { WorkflowExecutionSubscriber } from "@/features/execution/components/workflow-execution-subscriber";
@@ -32,6 +32,9 @@ import {
   resolveNodeIdForStatus,
 } from "@/features/execution/context/workflow-execution-context";
 import type { NodeStatus } from "@/components/react-flow/node-status-indicator";
+import { NodeSelector } from "@/components/node-selector";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export const EditorLoading = () => {
   return <LoadingView message="Loading editor..." />;
@@ -43,8 +46,26 @@ export const EditorError = () => {
 
 export const Editor = ({ workflowId }: { workflowId: string }) => {
   const { data: workflow } = useSuspenseWorkflow(workflowId);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const setEditor = useSetAtom(editorAtom);
+  const [selectorOpen, setSelectorOpen] = useAtom(nodeSelectorOpenAtom);
+
+  useEffect(() => {
+    if (searchParams.get("openNodeSelector") !== "1") {
+      return;
+    }
+
+    setSelectorOpen(true);
+    router.replace(`/workflows/${workflowId}`, { scroll: false });
+  }, [router, searchParams, setSelectorOpen, workflowId]);
+
+  useEffect(() => {
+    return () => {
+      setSelectorOpen(false);
+    };
+  }, [setSelectorOpen]);
 
   const [nodes, setNodes] = useState<Node[]>(workflow.nodes);
   const [edges, setEdges] = useState<Edge[]>(workflow.edges);
@@ -153,6 +174,7 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
             hideAttribution: true,
           }}
         >
+          <NodeSelector open={selectorOpen} onOpenChange={setSelectorOpen} />
           <Background gap={12} size={1} color="var(--color-border)" />
           <Controls className="bg-background border-border [&_button]:bg-background [&_button]:border-b-border [&_button:hover]:bg-muted [&_svg]:fill-foreground" />
           <MiniMap
@@ -160,8 +182,11 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
             nodeColor="var(--color-primary)"
             maskColor="var(--color-muted)"
           />
-          <Panel position="top-right">
-            <AddNodeButton />
+          <Panel position="top-left" className="m-2">
+            <OpenNodeSelectorButton
+              label="Add node"
+              className="bg-background/80 shadow-sm backdrop-blur"
+            />
           </Panel>
           {hasManualTrigger && (
             <Panel position="bottom-center" className="mb-4">

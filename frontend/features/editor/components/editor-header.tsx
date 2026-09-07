@@ -16,6 +16,7 @@ import {
 } from "@/features/workflows/hooks/use-workflows";
 import { useAtomValue } from "jotai";
 import { ExecuteWorkflowButton } from "./execute-workflow-button";
+import { OpenNodeSelectorButton } from "./open-node-selector-button";
 import { SaveIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -49,6 +50,7 @@ export const EditorSaveButton = ({ workflowId }: { workflowId: string }) => {
 
   return (
     <div className="ml-auto flex items-center gap-2">
+      <OpenNodeSelectorButton label="Add node" />
       {hasManualTrigger && (
         <ExecuteWorkflowButton workflowId={workflowId} size="sm" />
       )}

@@ -1,0 +1,118 @@
+@startuml Flowforge_System_Design
+' System design overview — component view
+' Render: plantuml docs/diagrams/system-design.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam node {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam arrowColor #000000
+
+left to right direction
+
+' ── Client ──────────────────────────────────────────────────
+
+package "Client (Browser)" as Client {
+  [React UI\nReact Flow Canvas] as UI
+  [TanStack Query] as TQ
+  [useRealtime Hook] as RT
+}
+
+' ── Application ───────────────────────────────────────────────
+
+node "Next.js 16 App" as NextJS {
+
+  package "API Routes" as Routes {
+    [/api/trpc] as TRPCRoute
+    [/api/auth] as AuthRoute
+    [/api/inngest] as InngestRoute
+    [/api/webhooks] as WebhookRoute
+    [/api/execution-status] as PollRoute
+  }
+
+  package "Application Layer" as AppLayer {
+    [tRPC Routers\nworkflows · credentials\nexecutions · admin] as TRPC
+    [better-auth\nsessions + roles] as Auth
+    [Trigger Enforcement] as Triggers
+    [Credential Encryption] as Encryption
+  }
+
+  package "Execution Engine" as Engine {
+    [execute-workflow\nInngest Function] as ExecFn
+    [Executor Registry\nAI · HTTP · Discord · Slack] as Executors
+    [Execution Status Store] as StatusStore
+  }
+}
+
+' ── External ────────────────────────────────────────────────
+
+cloud "Inngest Cloud\nqueue + realtime" as InngestCloud
+cloud "Polar.sh\nsubscriptions" as Polar
+cloud "AI & Integrations\nOpenAI · Anthropic · Gemini\nDiscord · Slack" as Integrations
+
+database "PostgreSQL\nPrisma ORM" as DB
+
+actor "Stripe" as Stripe
+actor "Google Forms" as GoogleForms
+
+' ── Client → App ────────────────────────────────────────────
+
+UI --> TRPCRoute : tRPC queries/mutations
+UI --> AuthRoute : sign in / sign up
+RT --> InngestCloud : WebSocket
+UI --> PollRoute : polling fallback
+
+' ── App internal ────────────────────────────────────────────
+
+TRPCRoute --> TRPC
+AuthRoute --> Auth
+InngestRoute --> ExecFn
+WebhookRoute --> Triggers
+WebhookRoute --> ExecFn
+PollRoute --> StatusStore
+
+TRPC --> Triggers
+TRPC --> Encryption
+TRPC --> ExecFn
+TRPC --> Polar : subscription check
+
+ExecFn --> Executors
+ExecFn --> StatusStore
+Executors --> Integrations
+
+' ── App → Data & External ───────────────────────────────────
+
+TRPC --> DB
+Auth --> DB
+ExecFn --> DB
+Triggers --> DB
+StatusStore --> DB
+Encryption --> DB
+
+ExecFn --> InngestCloud : send / publish events
+InngestCloud --> ExecFn : invoke function
+
+Stripe --> WebhookRoute : POST webhook
+GoogleForms --> WebhookRoute : POST webhook
+
+@enduml

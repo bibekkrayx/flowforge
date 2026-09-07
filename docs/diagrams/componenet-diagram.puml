@@ -1,0 +1,52 @@
+@startuml Flowforge_Component_Diagram
+' Component diagram — overview
+' Render: plantuml docs/diagrams/componenet-diagram.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam arrowColor #000000
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+
+top to bottom direction
+
+package "Presentation" as UI {
+  [React UI\nEditor · Workflows · Credentials\nExecutions · Admin] as Frontend
+}
+
+package "API" as API {
+  [tRPC Routers\nworkflows · credentials\nexecutions · admin] as TRPC
+}
+
+package "Services" as Services {
+  [Shared Logic\nAuth · Encryption · Triggers] as Logic
+}
+
+package "Execution" as Engine {
+  [Inngest Engine\nexecute-workflow · Executors\nRealtime · Status Store] as Inngest
+}
+
+database "PostgreSQL\nPrisma ORM" as DB
+
+Frontend --> TRPC
+TRPC --> Logic
+TRPC --> Inngest
+Logic --> DB
+Inngest --> DB
+
+@enduml

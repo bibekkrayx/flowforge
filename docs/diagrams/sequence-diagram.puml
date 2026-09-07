@@ -1,0 +1,59 @@
+@startuml Flowforge_Sequence_Diagram
+' Manual workflow execution — key steps only
+' Render: plantuml docs/diagrams/sequence-diagram.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequence {
+  ArrowColor #000000
+  LifeLineBorderColor #000000
+  ParticipantBorderColor #000000
+  ParticipantBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  ActorBackgroundColor #FFFFFF
+}
+
+actor User
+participant "Browser" as Browser
+participant "workflows\n(tRPC)" as TRPC
+database "PostgreSQL" as DB
+participant "Inngest\nexecute-workflow" as Inngest
+participant "ExecutorRegistry" as Registry
+
+== 1. Trigger ==
+User -> Browser : click **Run**
+Browser -> TRPC : workflows.execute({ workflowId })
+TRPC -> DB : assertTriggerEnabled(MANUAL)
+DB --> TRPC : enabled
+TRPC -> Inngest : send(execute.workflow)
+Inngest --> TRPC : event queued
+TRPC --> Browser : 200 OK
+
+Browser -> Inngest : subscribe (useRealtime)
+
+== 2. Prepare ==
+Inngest -> DB : create Execution (RUNNING)
+Inngest -> DB : load workflow, nodes, connections
+DB --> Inngest : graph
+Inngest -> DB : assertWorkflowTriggersEnabled()
+Inngest -> Inngest : topologicalSort()
+Inngest -> DB : reset WorkflowExecutionSnapshot
+Inngest --> Browser : execution.started
+
+== 3. Run graph ==
+loop each node via executeGraph
+  Inngest -> Registry : getExecutor(nodeType)
+  Registry --> Inngest : NodeExecutor
+  Inngest --> Browser : node.started
+  Inngest -> Registry : execute(node, context)
+  Registry --> Inngest : updated context
+  Inngest -> DB : upsert node snapshot
+  Inngest --> Browser : node.completed
+end
+
+== 4. Finish ==
+Inngest --> Browser : execution.completed
+Inngest -> DB : update Execution (SUCCESS, output)
+
+@enduml

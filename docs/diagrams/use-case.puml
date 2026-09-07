@@ -1,0 +1,105 @@
+@startuml Flowforge_Use_Case_Diagram
+' Top-to-bottom: actors across top, use cases in one vertical column inside system boundary.
+' Render: plantuml docs/diagrams/use-case.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype polyline
+skinparam nodesep 40
+skinparam ranksep 30
+skinparam actorStyle stick
+skinparam usecase {
+  BackgroundColor #FFF9C4
+  BorderColor #333333
+  FontColor #1A1A1A
+}
+skinparam rectangle {
+  BorderColor #333333
+  FontColor #1A1A1A
+}
+skinparam actor {
+  BorderColor #333333
+  FontColor #1A1A1A
+}
+
+top to bottom direction
+
+actor Visitor
+actor Member
+actor "Pro Member" as ProMember
+actor Admin
+
+rectangle "FlowForge Workflow Automation System" {
+
+  usecase "Sign up" as UC_SignUp
+  usecase "Sign in" as UC_SignIn
+  usecase "Browse workflows" as UC_Browse
+  usecase "Create workflow" as UC_Create
+  usecase "Edit & save workflow" as UC_Edit
+  usecase "Generate workflow (AI)" as UC_AIGen
+  usecase "Run workflow" as UC_Run
+  usecase "Manage credentials" as UC_Credentials
+  usecase "View executions" as UC_Executions
+  usecase "Manage calendar" as UC_Calendar
+  usecase "Manage subscription" as UC_Subscription
+  usecase "Manage users" as UC_Users
+  usecase "Set user role" as UC_Role
+  usecase "Manage trigger settings" as UC_Triggers
+
+  UC_SignUp -[hidden]down- UC_SignIn
+  UC_SignIn -[hidden]down- UC_Browse
+  UC_Browse -[hidden]down- UC_Create
+  UC_Create -[hidden]down- UC_Edit
+  UC_Edit -[hidden]down- UC_AIGen
+  UC_AIGen -[hidden]down- UC_Run
+  UC_Run -[hidden]down- UC_Credentials
+  UC_Credentials -[hidden]down- UC_Executions
+  UC_Executions -[hidden]down- UC_Calendar
+  UC_Calendar -[hidden]down- UC_Subscription
+  UC_Subscription -[hidden]down- UC_Users
+  UC_Users -[hidden]down- UC_Role
+  UC_Role -[hidden]down- UC_Triggers
+}
+
+Visitor -[hidden]right- Member
+Member -[hidden]right- ProMember
+ProMember -[hidden]right- Admin
+
+Visitor -- UC_SignUp
+Visitor -- UC_SignIn
+
+Member -- UC_SignIn
+Member -- UC_Browse
+Member -- UC_Edit
+Member -- UC_Run
+Member -- UC_Executions
+Member -- UC_Calendar
+Member -- UC_Subscription
+
+ProMember -- UC_SignIn
+ProMember -- UC_Browse
+ProMember -- UC_Create
+ProMember -- UC_Edit
+ProMember -- UC_AIGen
+ProMember -- UC_Run
+ProMember -- UC_Credentials
+ProMember -- UC_Executions
+ProMember -- UC_Calendar
+ProMember -- UC_Subscription
+
+Admin -- UC_SignIn
+Admin -- UC_Browse
+Admin -- UC_Create
+Admin -- UC_Edit
+Admin -- UC_AIGen
+Admin -- UC_Run
+Admin -- UC_Credentials
+Admin -- UC_Executions
+Admin -- UC_Calendar
+Admin -- UC_Subscription
+Admin -- UC_Users
+Admin -- UC_Role
+Admin -- UC_Triggers
+
+@enduml

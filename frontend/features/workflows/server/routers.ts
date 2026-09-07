@@ -190,7 +190,7 @@ export const workflowsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const node = await prisma.node.findFirstOrThrow({
+      const node = await prisma.node.findFirst({
         where: {
           id: input.nodeId,
           workflowId: input.workflowId,
@@ -198,6 +198,13 @@ export const workflowsRouter = createTRPCRouter({
           workflow: { userId: ctx.auth.user.id },
         },
       });
+
+      if (!node) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Save the workflow before configuring the trigger.",
+        });
+      }
 
       const data = (node.data as Record<string, unknown>) || {};
 
@@ -234,7 +241,7 @@ export const workflowsRouter = createTRPCRouter({
         });
       }
 
-      const node = await prisma.node.findFirstOrThrow({
+      const node = await prisma.node.findFirst({
         where: {
           id: input.nodeId,
           workflowId: input.workflowId,
@@ -242,6 +249,13 @@ export const workflowsRouter = createTRPCRouter({
           workflow: { userId: ctx.auth.user.id },
         },
       });
+
+      if (!node) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Save the workflow before configuring the trigger.",
+        });
+      }
 
       const nextRunAt = computeNextRun(
         input.cronExpression,
@@ -309,7 +323,7 @@ export const workflowsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const node = await prisma.node.findFirstOrThrow({
+      const node = await prisma.node.findFirst({
         where: {
           id: input.nodeId,
           workflowId: input.workflowId,
@@ -318,9 +332,23 @@ export const workflowsRouter = createTRPCRouter({
         },
       });
 
-      const event = await prisma.calendarEvent.findFirstOrThrow({
+      if (!node) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Save the workflow before configuring the reminder.",
+        });
+      }
+
+      const event = await prisma.calendarEvent.findFirst({
         where: { id: input.eventId, userId: ctx.auth.user.id },
       });
+
+      if (!event) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Selected calendar event not found.",
+        });
+      }
 
       const fireAt = computeFireAt(
         event.startAt,

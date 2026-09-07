@@ -1,0 +1,250 @@
+@startuml Flowforge_Database_Schema
+' Entity-relationship diagram — derived from frontend/prisma/schema.prisma
+' Render: plantuml docs/diagrams/database-schema.puml
+' Or paste @startuml block into https://www.plantuml.com/plantuml
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+}
+skinparam arrowColor #000000
+
+' Cardinality: "1" = one, "N" = many, "M" = many (N:M via junction tables)
+hide circle
+top to bottom direction
+
+package "Auth" {
+
+  entity "user" as user {
+    * **id** : String <<PK>>
+    --
+    * email : String <<UK>>
+    name : String
+    emailVerified : Boolean
+    image : String
+    role : UserRole
+    banned : Boolean
+    banReason : String
+    banExpires : DateTime
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+
+  entity "session" as session {
+    * **id** : String <<PK>>
+    --
+    * token : String <<UK>>
+    expiresAt : DateTime
+    ipAddress : String
+    userAgent : String
+    impersonatedBy : String
+    * userId : String <<FK>>
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+
+  entity "account" as account {
+    * **id** : String <<PK>>
+    --
+    accountId : String
+    providerId : String
+    * userId : String <<FK>>
+    password : String
+    accessToken : String
+    refreshToken : String
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+
+  entity "verification" as verification {
+    * **id** : String <<PK>>
+    --
+    identifier : String
+    value : String
+    expiresAt : DateTime
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+}
+
+package "Workflows" {
+
+  entity "Workflow" as workflow {
+    * **id** : String <<PK>>
+    --
+    name : String
+    * userId : String <<FK>>
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+
+  entity "Node" as node {
+    * **id** : String <<PK>>
+    --
+    * workflowId : String <<FK>>
+    name : String
+    type : NodeType
+    position : Json
+    data : Json
+    credentialId : String <<FK>>
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+
+  entity "Connection" as connection {
+    * **id** : String <<PK>>
+    --
+    * workflowId : String <<FK>>
+    * fromNodeId : String <<FK>>
+    * toNodeId : String <<FK>>
+    fromOutput : String
+    toInput : String
+    createdAt : DateTime
+    updatedAt : DateTime
+    ..
+    UK (fromNodeId, toNodeId,
+    fromOutput, toInput)
+  }
+
+  entity "Execution" as execution {
+    * **id** : String <<PK>>
+    --
+    * workflowId : String <<FK>>
+    status : ExecutionStatus
+    error : Text
+    errorStack : Text
+    * inngestEventId : String <<UK>>
+    output : Json
+    startedAt : DateTime
+    completedAt : DateTime
+  }
+
+  entity "WorkflowExecutionSnapshot" as snapshot {
+    * **workflowId** : String <<PK, FK>>
+    --
+    phase : String
+    nodeStatuses : Json
+    updatedAt : DateTime
+  }
+}
+
+package "Credentials" {
+
+  entity "Credential" as credential {
+    * **id** : String <<PK>>
+    --
+    name : String
+    value : String
+    type : CredentialType
+    * userId : String <<FK>>
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+}
+
+package "Triggers & Calendar" {
+
+  entity "trigger_setting" as trigger_setting {
+    * **kind** : TriggerKind <<PK>>
+    --
+    enabled : Boolean
+    updatedAt : DateTime
+  }
+
+  entity "schedule_trigger" as schedule_trigger {
+    * **id** : String <<PK>>
+    --
+    * workflowId : String <<FK>>
+    * nodeId : String <<UK>>
+    mode : String
+    cronExpression : String
+    timezone : String
+    enabled : Boolean
+    lastRunAt : DateTime
+    nextRunAt : DateTime
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+
+  entity "calendar_event" as calendar_event {
+    * **id** : String <<PK>>
+    --
+    * userId : String <<FK>>
+    title : String
+    description : Text
+    startAt : DateTime
+    endAt : DateTime
+    allDay : Boolean
+    timezone : String
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+
+  entity "event_reminder" as event_reminder {
+    * **id** : String <<PK>>
+    --
+    * eventId : String <<FK>>
+    * workflowId : String <<FK>>
+    * nodeId : String <<UK>>
+    offsetValue : Int
+    offsetUnit : ReminderUnit
+    direction : ReminderDirection
+    fireAt : DateTime
+    triggeredAt : DateTime
+    enabled : Boolean
+    createdAt : DateTime
+    updatedAt : DateTime
+  }
+}
+
+' ── Auth ──────────────────────────────────────────────────────
+
+user "1" -- "N" session : has
+user "1" -- "N" account : has
+user "1" -- "N" workflow : owns
+user "1" -- "N" credential : owns
+user "1" -- "N" calendar_event : owns
+
+' ── Workflow graph ────────────────────────────────────────────
+
+workflow "1" -- "N" node : contains
+workflow "1" -- "N" connection : has
+workflow "1" -- "N" execution : records
+workflow "1" -- "1" snapshot : caches
+workflow "1" -- "N" schedule_trigger : schedules
+workflow "1" -- "N" event_reminder : reminds
+
+credential "1" -- "N" node : used by
+node "1" -- "N" connection : from
+node "1" -- "N" connection : to
+calendar_event "N" -- "M" workflow : via event_reminder
+
+' ── Calendar ──────────────────────────────────────────────────
+
+calendar_event "1" -- "N" event_reminder : has
+
+' ── Layout hints ──────────────────────────────────────────────
+
+user -[hidden]right- session
+session -[hidden]right- account
+account -[hidden]right- verification
+
+workflow -[hidden]right- node
+node -[hidden]right- connection
+connection -[hidden]right- execution
+execution -[hidden]right- snapshot
+
+trigger_setting -[hidden]right- schedule_trigger
+schedule_trigger -[hidden]right- calendar_event
+calendar_event -[hidden]right- event_reminder
+
+@enduml

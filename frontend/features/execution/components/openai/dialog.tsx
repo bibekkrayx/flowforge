@@ -207,7 +207,7 @@ export const OpenAiDialog = ({
                   />
                 </FormControl>
                   <FormDescription>
-                    Input for the AI only (never sent to Discord). Use {"{{json googleForm}}"} for form data. Output is structured as {"{ discordMessage }"} for the Discord node.
+                    Input for the AI only (never sent to Discord). Use {"{{json googleForm}}"} for form data, or {"{{json variableName}}"} for upstream nodes. Teacher feedback formatting applies only to Google Form workflows.
                   </FormDescription>
                 <FormMessage />
               </FormItem>
